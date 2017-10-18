@@ -68,11 +68,26 @@ abstract class QuickCheckHeap extends Properties("Heap") with IntHeap {
           listHelper(h1, t :: res)
         }
       }
-
       listHelper(h, List())
     }
-
-    list(h).sorted == list(h)
+    list(h).sorted(this.ord) == list(h)
   }
 
+  property("insert two equal ints and get them back") = forAll { (a: this.A) =>
+    val h = insert(a,insert(a, empty))
+    val a1 = findMin(h)
+    val h1 = deleteMin(h)
+    val a2 = findMin(h1)
+    isEmpty(deleteMin(h1))
+
+  }
+
+  property("second min check") = forAll{(a1: this.A, a2: this.A) =>
+    val little = if (a1<a2) a1 else a2
+    val big = if (a1<a2) a2 else a1
+    val h = insert(a2,insert(a1,empty))
+    val h1 = deleteMin(h)
+    val check = findMin(h1)
+    check == big
+  }
 }
