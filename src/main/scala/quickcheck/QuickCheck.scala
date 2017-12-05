@@ -1,10 +1,9 @@
 package quickcheck
 
-import common._
+import org.scalacheck.Arbitrary._
+import org.scalacheck.Gen._
+import org.scalacheck.Prop._
 import org.scalacheck._
-import Arbitrary._
-import Gen._
-import Prop._
 
 import scala.annotation.tailrec
 
@@ -18,7 +17,7 @@ abstract class QuickCheckHeap extends Properties("Heap") with IntHeap {
       m <- oneOf(const(this.empty), genHeap)
     } yield insert(k, m)
   )
-  
+
   implicit lazy val arbHeap: Arbitrary[H] = Arbitrary(genHeap)
 
   property("gen1") = forAll { (h: H) =>
@@ -75,4 +74,30 @@ abstract class QuickCheckHeap extends Properties("Heap") with IntHeap {
     list(h).sorted == list(h)
   }
 
+  property("meld1") = forAll { h: this.H =>
+    val emptyHeap = this.empty
+    meld(emptyHeap, h) == h && meld(h, emptyHeap) == h
+  }
+
+  property("meld2") = forAll { (h1: this.H, h2: this.H) =>
+    if (!isEmpty(h1) && !isEmpty(h2)) {
+      val h1Min = findMin(h1)
+      val h2Min = findMin(h2)
+      val min = if (h1Min < h2Min) h1Min else h2Min
+      findMin(meld(h1, h2)) == min
+    }
+    else true
+  }
+
+  property("check that elements inserted are equal to the elements generated") = forAll { (elems: List[A]) =>
+    val elemsSorted: List[A] = elems.sorted
+    var heap = elems.foldRight(empty: H)((el: A, h: H) => insert(el, h))
+
+    elemsSorted.map(el => {
+      val eq = el == findMin(heap)
+      heap = deleteMin(heap)
+      eq
+    }
+    ).fold(true)(_ && _)
+  }
 }
